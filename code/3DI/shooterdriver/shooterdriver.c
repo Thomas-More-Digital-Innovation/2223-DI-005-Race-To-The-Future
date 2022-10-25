@@ -168,14 +168,19 @@ int main(int argc, char *argv[])
 			{
 				float scaledAxis = ((axes[axis].x / 32767.0f) * 90) + 90;
 				// printf("%.4f\n", scaledAxis);
-				snprintf(steeringWriteBuffer, sizeof(steeringWriteBuffer), "%d\n", SERVO_MIN_DUTY + (SERVO_DEGREE * (int)scaledAxis));
+				snprintf(steeringWriteBuffer, sizeof(steeringWriteBuffer), "%d\n", SERVO_MIN_DUTY + (SERVO_DEGREE * (int) (180 - scaledAxis)));
 				write(steering, steeringWriteBuffer, sizeof(steeringWriteBuffer));
 			}
 
 			if (axis == 1 && estop_ok)
 			{
 				float scaledAxis = ((axes[axis].x / 32767.0f) * 45) + 45;
-				printf("%.4f\n", scaledAxis);
+
+				if (scaledAxis > 35) {
+					scaledAxis = 35;
+				}
+
+				// printf("%.4f\n", scaledAxis);
 				snprintf(wheelsWriteBuffer, sizeof(wheelsWriteBuffer), "%d\n", WHEELS_SERVO_MIN_DUTY + (WHEELS_SERVO_DEGREE * (int)(90 - scaledAxis)));
 				write(wheels, wheelsWriteBuffer, sizeof(wheelsWriteBuffer));
 			}
@@ -183,7 +188,12 @@ int main(int argc, char *argv[])
 			if (axis == 2 && estop_ok)
 			{
 				float scaledAxis = ((axes[axis].y / 32767.0f) * 45) + 45;
-				printf("%.4f\n", scaledAxis);
+
+				if (scaledAxis > 25) {
+					scaledAxis = 25;
+				}
+
+				// printf("%.4f\n", scaledAxis);
 				snprintf(wheelsWriteBuffer, sizeof(wheelsWriteBuffer), "%d\n", WHEELS_SERVO_MIN_DUTY + (WHEELS_SERVO_DEGREE * (int)(scaledAxis + 90)));
 				write(wheels, wheelsWriteBuffer, sizeof(wheelsWriteBuffer));
 			}
