@@ -5,24 +5,40 @@ class ShooterDriver:
     """
     ShooterDriver is used to control the RTTF car.
     """
-    SERVO_PWM_PERIOD = 20000000
+    PWM_PERIOD = 20000000
+
     SERVO_MAX_DUTY = 2100000
     SERVO_MIN_DUTY = 1100000
     SERVO_INCREMENT = (SERVO_MAX_DUTY - SERVO_MIN_DUTY) / 200
 
-    WHEELS_PWM_PERIOD = 20000000
     WHEELS_MAX_DUTY = 2100000
     WHEELS_MIN_DUTY = 1100000
     WHEELS_INCREMENT = (SERVO_MAX_DUTY - SERVO_MIN_DUTY) / 200
 
-    PATH_STEERING_DUTY = "/sys/class/pwm/pwmchip0/pwm1/duty_cycle"
-    PATH_WHEELS_DUTY = "/sys/class/pwm/pwmchip0/pwm0/duty_cycle"
+    BASE_PATH = "/sys/class/pwm/pwmchip0"
 
     def __init__(self):
-        self.fh_steering = open(ShooterDriver.PATH_STEERING_DUTY, "w")
-        self.fh_wheels = open(ShooterDriver.PATH_WHEELS_DUTY, "w")
+        self._setup_pwmchip()
+
+        self.fh_steering = open(f"{ShooterDriver.BASE_PATH}/pwm1/duty_cycle", "w")
+        self.fh_wheels = open(f"{ShooterDriver.BASE_PATH}/pwm0/duty_cycle", "w")
 
         self._init_wheels()
+
+    def _setup_pwmchip(self) -> None:
+        """
+        This method initialises the PCA9685 with the correct exports and periods.
+        :return:
+        """
+        exports = [0, 1]
+
+        with open(f"{ShooterDriver.BASE_PATH}", "w") as export_file:
+            for export in exports:
+                export_file.write(f"{export}\n")
+
+        for export in exports:
+            with open(f"{ShooterDriver.BASE_PATH}/pwm{export}/period", "w") as export_file:
+                export_file.write(f"{ShooterDriver.PWM_PERIOD}\n")
 
     def _write_steering(self, angle: float) -> None:
         """
@@ -56,11 +72,11 @@ class ShooterDriver:
         :return:
         """
         self.set_wheels_speed(-1.0)
-        sleep(0.01)
+        sleep(0.1)
         self.set_wheels_speed(1.0)
-        sleep(0.01)
+        sleep(0.1)
         self.set_wheels_speed(0.0)
-        sleep(0.01)
+        sleep(0.1)
 
     def set_steering_angle(self, angle: float) -> None:
         """
