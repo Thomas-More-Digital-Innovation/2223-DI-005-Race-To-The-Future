@@ -24,7 +24,7 @@ jobs:
         --sdist
         --wheel
         --outdir dist/
-        ./shared/ShooterDriver/
+        ./code/shared/ShooterDriver/
     - name: Publish distribution 📦 to PyPI
       if: startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@release/v1
