@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shooterdriver"
-version = "1.0.1"
+version = "1.0.2"
 authors = [
   { name="Jonas Claes", email="jonas@jonasclaes.be" },
 ]
 description = "A library for controlling the T2M Shooter RC Car through Python."
 readme = "README.md"
 license = { file="LICENSE" }
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 dependencies = []
 classifiers = [
     "Programming Language :: Python :: 3",
