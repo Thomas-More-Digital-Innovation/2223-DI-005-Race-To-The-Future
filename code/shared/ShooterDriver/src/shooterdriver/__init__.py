@@ -1,3 +1,4 @@
+import os
 from time import sleep
 
 
@@ -30,15 +31,43 @@ class ShooterDriver:
         This method initialises the PCA9685 with the correct exports and periods.
         :return:
         """
-        exports = [0, 1]
+        unexport_file = open(f"{ShooterDriver.BASE_PATH}/unexport", "w")
 
-        with open(f"{ShooterDriver.BASE_PATH}", "w") as export_file:
-            for export in exports:
-                export_file.write(f"{export}\n")
+        if os.path.exists(f"{ShooterDriver.BASE_PATH}/pwm0"):
+            unexport_file.write("0\n")
+            unexport_file.flush()
 
-        for export in exports:
-            with open(f"{ShooterDriver.BASE_PATH}/pwm{export}/period", "w") as export_file:
-                export_file.write(f"{ShooterDriver.PWM_PERIOD}\n")
+        if os.path.exists(f"{ShooterDriver.BASE_PATH}/pwm1"):
+            unexport_file.write("1\n")
+            unexport_file.flush()
+
+        unexport_file.close()
+
+        export_file = open(f"{ShooterDriver.BASE_PATH}/export", "w")
+
+        export_file.write("0\n")
+        export_file.flush()
+
+        sleep(0.1)
+
+        pwm0_period_file = open(f"{ShooterDriver.BASE_PATH}/pwm0/period", "w")
+        pwm0_period_file.write("20000000\n")
+        pwm0_period_file.flush()
+        pwm0_period_file.close()
+
+        export_file.write("1\n")
+        export_file.flush()
+
+        sleep(0.1)
+
+        pwm1_period_file = open(f"{ShooterDriver.BASE_PATH}/pwm1/period", "w")
+        pwm1_period_file.write("20000000\n")
+        pwm1_period_file.flush()
+        pwm1_period_file.close()
+
+        export_file.close()
+
+        sleep(0.1)
 
     def _write_steering(self, angle: float) -> None:
         """
