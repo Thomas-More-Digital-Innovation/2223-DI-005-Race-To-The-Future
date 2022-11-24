@@ -1,0 +1,5 @@
+autopep8
+evdev
+grpcio
+grpcio-tools
+protobuf
