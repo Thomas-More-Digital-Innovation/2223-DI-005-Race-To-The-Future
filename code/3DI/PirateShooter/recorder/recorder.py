@@ -11,8 +11,10 @@ class Recorder:
     device: evdev.InputDevice
     camera: cv2.VideoCapture
     callback: Callable[[float, float, float, Any], None]
+    callback_input: Callable[[float, float, float], None]
 
     record: bool
+    input_skip_size: int
 
     input_lock: threading.Lock
     latest_timestamp: float
@@ -25,12 +27,13 @@ class Recorder:
     camera_thread: threading.Thread
     input_thread: threading.Thread
 
-    def __init__(self, device_path: str, camera_id: int, callback: Callable[[float, float, float, Any], None]) -> None:
+    def __init__(self, device_path: str, camera_id: int, callback: Callable[[float, float, float, Any], None], callback_input: Callable[[float, float, float], None], input_skip_size: int = 0) -> None:
         self.logger = logging.getLogger(__name__)
 
         # do not start recording on initialise
         # we have the start and stop methods for this
         self.record = False
+        self.input_skip_size = input_skip_size
 
         self.input_lock = threading.Lock()
         self.image_lock = threading.Lock()
@@ -43,6 +46,7 @@ class Recorder:
         self.device = evdev.InputDevice(device_path)
         self.camera = cv2.VideoCapture(camera_id)
         self.callback = callback
+        self.callback_input = callback_input
 
         if not self.camera.isOpened():
             self.logger.critical("camera could not be opened")
@@ -54,6 +58,8 @@ class Recorder:
         self.logger.info("recorder has been initialised")
 
     def _device_input_loop(self) -> None:
+        measurements = 0
+
         for event in self.device.read_loop():
             if not self.record:
                 return
@@ -80,7 +86,14 @@ class Recorder:
                 if event.code == evdev.ecodes.ABS_X:
                     self.latest_steering_input = (event.value / 255) * 2 - 1
 
-            self._handle_input()
+            self.callback_input(
+                self.latest_timestamp, self.latest_steering_input, self.latest_wheel_input)
+
+            measurements += 1
+
+            if self.input_skip_size == 0 or self.input_skip_size >= measurements:
+                self._handle_input()
+                measurements = 0
 
     def _camera_input_loop(self) -> None:
         while self.record:

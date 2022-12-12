@@ -10,6 +10,9 @@ from recorder.proto import recorder_pb2, recorder_pb2_grpc
 
 SERVER_ADDRESS = 'localhost:50051'
 
+# Skip this amount of measurements. This is to generate less/more data.
+SKIP_MEASUREMENTS = 0
+
 
 def callback(latest_timestamp, latest_steering_input, latest_wheel_input, latest_image: numpy.ndarray, stub: recorder_pb2_grpc.RecorderServiceStub):
     if latest_image is None:
@@ -26,6 +29,11 @@ def callback(latest_timestamp, latest_steering_input, latest_wheel_input, latest
     stub.SendDataPoint(datapoint)
 
 
+def callback_input(latest_timestamp: float, latest_steering_input: float, latest_wheel_input: float, driver):
+    print(
+        f"Steering angle: {latest_steering_input} | Wheel speed: {latest_wheel_input}")
+
+
 def main():
     logging.basicConfig(format='%(levelname)s:%(message)s',
                         level=logging.DEBUG)
@@ -34,7 +42,7 @@ def main():
     stub = recorder_pb2_grpc.RecorderServiceStub(channel)
 
     recorder = Recorder('/dev/input/event20', 0,
-                        functools.partial(callback, stub=stub))
+                        functools.partial(callback, stub=stub), functools.partial(callback_input, driver=None), SKIP_MEASUREMENTS)
 
     try:
         recorder.start()
