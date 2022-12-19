@@ -11,6 +11,7 @@ class Recorder:
     device: evdev.InputDevice
     camera: cv2.VideoCapture
     callback: Callable[[float, float, float, Any], None]
+    callback_controls: Callable[[float, float], None]
 
     record: bool
 
@@ -19,18 +20,22 @@ class Recorder:
     latest_wheel_input: float
     latest_steering_input: float
 
+    skip_input_count: int
+
     image_lock: threading.Lock
     latest_image: Any
 
     camera_thread: threading.Thread
     input_thread: threading.Thread
 
-    def __init__(self, device_path: str, camera_id: int, callback: Callable[[float, float, float, Any], None]) -> None:
+    def __init__(self, device_path: str, camera_string: str, callback: Callable[[float, float, float, Any], None], callback_controls: Callable[[float, float], None]) -> None:
         self.logger = logging.getLogger(__name__)
 
         # do not start recording on initialise
         # we have the start and stop methods for this
         self.record = False
+
+        self.skip_input_count = 0
 
         self.input_lock = threading.Lock()
         self.image_lock = threading.Lock()
@@ -41,8 +46,9 @@ class Recorder:
         self.latest_wheel_input = 0.0
 
         self.device = evdev.InputDevice(device_path)
-        self.camera = cv2.VideoCapture(camera_id)
+        self.camera = cv2.VideoCapture(camera_string, cv2.CAP_GSTREAMER)
         self.callback = callback
+        self.callback_controls = callback_controls
 
         if not self.camera.isOpened():
             self.logger.critical("camera could not be opened")
@@ -66,21 +72,32 @@ class Recorder:
                 continue
 
             with self.input_lock:
+                if event.type == evdev.ecodes.SYN_REPORT:
+                    continue
+
                 if event.code in [evdev.ecodes.ABS_RZ, evdev.ecodes.ABS_Z, evdev.ecodes.ABS_X]:
                     self.latest_timestamp = event.timestamp()
-                    self.latest_steering_input = 0.0
-                    self.latest_wheel_input = 0.0
+                    # self.latest_steering_input = 0.0
+                    # self.latest_wheel_input = 0.0
 
-                if event.code == evdev.ecodes.ABS_RZ:
+                if event.code == evdev.ecodes.ABS_RY:
                     self.latest_wheel_input = event.value / 255
 
-                if event.code == evdev.ecodes.ABS_Z:
+                if event.code == evdev.ecodes.ABS_RX:
                     self.latest_wheel_input = (1 - (event.value / 255)) - 1
 
                 if event.code == evdev.ecodes.ABS_X:
                     self.latest_steering_input = (event.value / 255) * 2 - 1
 
-            self._handle_input()
+                self.skip_input_count += 1
+
+                if self.skip_input_count > 30:
+                    self.callback_controls(
+                        self.latest_steering_input, self.latest_wheel_input)
+                    self.skip_input_count = 0
+
+            # Uncomment to handle every input ever sent to the recorder
+            # self._handle_input()
 
     def _camera_input_loop(self) -> None:
         while self.record:
