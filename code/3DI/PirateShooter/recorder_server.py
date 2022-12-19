@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 import datetime
+from io import BytesIO
 import logging
 import pickle
 import threading
 import time
+from typing import List
 import grpc
 from concurrent import futures
+import numpy
+import cv2
 
 from recorder.proto import recorder_pb2, recorder_pb2_grpc
 from recorder.model.datapoint import DataPoint
@@ -13,7 +17,7 @@ from recorder.model.datapoint import DataPoint
 OUTPUT_FILE = "datapoints/datapoints_{timestamp}_{slice}.pickle"
 
 dump = True
-datapoints = []
+datapoints: List[DataPoint] = []
 datapoint_lock = threading.Lock()
 
 
@@ -45,7 +49,7 @@ def data_dump_loop():
     slice_number = 0
 
     while dump:
-        if len(datapoints) > 1000:
+        if len(datapoints) > 30:
             with datapoint_lock:
                 with open(OUTPUT_FILE.format(slice=slice_number, timestamp=int(datetime.datetime.now().timestamp())), 'wb') as pickle_file:
                     pickler = pickle.Pickler(
