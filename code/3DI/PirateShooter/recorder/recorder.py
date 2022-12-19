@@ -60,8 +60,6 @@ class Recorder:
         self.logger.info("recorder has been initialised")
 
     def _device_input_loop(self) -> None:
-        measurements = 0
-
         for event in self.device.read_loop():
             if not self.record:
                 return

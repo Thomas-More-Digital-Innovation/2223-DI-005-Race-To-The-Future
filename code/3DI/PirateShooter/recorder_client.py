@@ -11,9 +11,6 @@ from recorder.proto import recorder_pb2, recorder_pb2_grpc
 
 SERVER_ADDRESS = '192.168.10.119:50051'
 
-# Skip this amount of measurements. This is to generate less/more data.
-SKIP_MEASUREMENTS = 0
-
 
 def callback(latest_timestamp, latest_steering_input, latest_wheel_input, latest_image: numpy.ndarray, stub: recorder_pb2_grpc.RecorderServiceStub):
     if latest_image is None:
