@@ -26,6 +26,10 @@ def callback_controls(latest_steering_input: float, latest_wheel_input: float, s
     if wheel_angle < 0:
         wheel_angle = 0
 
+    # Speed limiter
+    if wheel_angle > 135:
+        wheel_angle = 135
+
     servos.servo[0].angle = wheel_angle
     servos.servo[1].angle = 180 - steering_angle
 
