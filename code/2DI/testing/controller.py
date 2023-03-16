@@ -33,7 +33,11 @@ for event in device.read_loop():
             driver.set_wheels_speed(-(1+value))
         # left axis
         if event.code == ecodes.ABS_X:
-            value = (device.absinfo(ecodes.ABS_X).value / 255) -0.25
+        
+            if device.absinfo(ecodes.ABS_X).value > 126:
+               value = ((device.absinfo(ecodes.ABS_X).value - 126) / 129) * 0.6 + 0.25
+            else:
+                value = ((device.absinfo(ecodes.ABS_X).value / 126) * 0.75) - 0.5
             driver.set_steering_angle(value)
             print("controller:",device.absinfo(ecodes.ABS_X).value)
             print("value:",value)
