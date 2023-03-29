@@ -23,6 +23,12 @@ def average_slope_intercept(image, lines):
     left_fit=[]
     right_fit=[]
 
+    height, width, _ = image.shape
+
+    boundary = 1/3
+    left_region_boundary = width * (1 - boundary)  # left lane line segment should be on left 2/3 of the screen
+    right_region_boundary = width * boundary # right lane line segment should be on left 2/3 of the screen
+
     if lines is not None:
         for line in lines:
             x1, y1, x2, y2 = line.reshape(4)
@@ -31,9 +37,11 @@ def average_slope_intercept(image, lines):
             intercept = parameters[1]
             if slope < -0.001 :
                 #kijken of in de image valt
-                left_fit.append((slope, intercept))
+                if x1 < left_region_boundary and x2 < left_region_boundary:
+                    left_fit.append((slope, intercept))
             elif slope > 0.001:
-                right_fit.append((slope, intercept))
+                if x1 > right_region_boundary and x2 > right_region_boundary:
+                    right_fit.append((slope, intercept))
             else:
                 break
     left_fit_average = np.average(left_fit, axis=0)
@@ -53,9 +61,9 @@ def canny(image):
     gray = cv2.inRange(blur, lower, upper)
     canny = cv2.Canny(gray, 190, 255)
     if(is_recording):
-        cv2.imwrite("gray.png", gray)
-        cv2.imwrite("hsv.png", hsv)
-        cv2.imwrite("blur.png", blur)
+    #     cv2.imwrite("gray.png", gray)
+    #     cv2.imwrite("hsv.png", hsv)
+    #     cv2.imwrite("blur.png", blur)
         cv2.imwrite('./resultCanny.png',canny)
     return canny
 
@@ -91,12 +99,12 @@ def display_lines(image, lines, steering_angle):
 
 def region_of_interest(image):
     height = image.shape[0] 
-    horizon = np.array([[(0, height), (320, height) , (320, height-110), (115, 130),(235, 130), (0, height-110)]], np.int32)
+    horizon = np.array([[(0, height), (320, height) , (320, height-140), (115, 100),(235, 100), (0, height-140)]], np.int32)
     mask = np.zeros_like(image)
     cv2.fillPoly(mask, horizon, 255)
     masked_image = cv2.bitwise_and(image,mask)
-    if(is_recording):
-        cv2.imwrite('./resultROI.png',masked_image)
+    # # if(is_recording):
+    # #     cv2.imwrite('./resultROI.png',masked_image)
     return masked_image
 
 def compute_steering_angle(frame, lane_lines):
@@ -110,11 +118,11 @@ def compute_steering_angle(frame, lane_lines):
         if len(lane_lines[0]) == 0 and len(lane_lines[1]) == 1:
             average_len = 15
             x1, _, x2, _ = lane_lines[1][0]
-            x_offset = x2 - (x1 * 0.7)
+            x_offset = x2 - (x1 * 0.8)
         elif len(lane_lines[0]) == 1 and len(lane_lines[1]) == 0:
             average_len = 15
             x1, _, x2, _ = lane_lines[0][0]
-            x_offset = x2 - (x1 * 0.7)
+            x_offset = x2 - (x1 * 0.8)
         else:
             if average_len == 15:
                 angles = [90, 90, 90]
@@ -179,7 +187,7 @@ try:
         print("--- %s seconds ---" % (time.time() - start_time))
         if(is_recording):
             result.write(combo_image)
-            cv2.imwrite('./result.png',combo_image)
+            #cv2.imwrite('./result.png',combo_image)
 except KeyboardInterrupt:
     print('interrupted!')
     driver.set_steering_angle(0.25)
