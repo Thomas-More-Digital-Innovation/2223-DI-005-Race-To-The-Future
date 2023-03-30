@@ -18,23 +18,37 @@ def make_coordinates(image, line_parameters):
 
 
 def average_slope_intercept(image, lines):
+    global crash_list
+
     left_line=[]
     right_line=[]
     left_fit=[]
     right_fit=[]
+    height, width, _ = frame.shape
+
+    boundary = 1/2.5
+    left_region_boundary = width * boundary# left lane line segment should be on left 2/3 of the screen 213.33344
+    right_region_boundary = width * (1 - boundary) # right lane line segment should be on left 2/3 of the screen 106.66656
 
     if lines is not None:
         for line in lines:
             x1, y1, x2, y2 = line.reshape(4)
+            if(y1 > 180 and y2 > 180):
+                crash_list += 1
+            else:
+                crash_list = 0
             parameters = np.polyfit((x1, x2), (y1, y2), 1)
             slope = parameters[0]
             intercept = parameters[1]
+            print(slope)
             if slope < -0.001 :
-                #kijken of in de image valt
-                left_fit.append((slope, intercept))
+                if x1 < left_region_boundary and x2 < left_region_boundary:
+                    left_fit.append((slope, intercept))
             elif slope > 0.001:
-                right_fit.append((slope, intercept))
+                if x1 > right_region_boundary and x2 > right_region_boundary:
+                    right_fit.append((slope, intercept))
             else:
+                #if lines are horizontal
                 break
     left_fit_average = np.average(left_fit, axis=0)
     right_fit_average = np.average(right_fit, axis=0)
@@ -145,6 +159,29 @@ def average_angle (steering_angle) :
     average_angle = sum(angles) / len(angles)
     return average_angle
 
+def crash_detection(length, real_angle):
+    global crash_list
+
+    if crash_list < length:
+        driver.set_wheels_speed(0.12)
+    else:
+        crash_list = 0
+        driver.set_wheels_speed(-1.0)
+        time.sleep(0.5)
+        driver.set_wheels_speed(0.0)
+        time.sleep(1)
+        if real_angle >= 90:
+            reverse_angle = real_angle - 90
+            new_steering_angle = 0.25 + (reverse_angle - 90) * (0.85 - 0.25) / (180 - 90)
+        else:
+            reverse_angle = real_angle + 90
+            new_steering_angle = -0.5 + reverse_angle * (0.25 - (-0.5)) / 90
+        driver.set_steering_angle(new_steering_angle) 
+        driver.set_wheels_speed(-0.1)
+        time.sleep(2)
+        driver.set_wheels_speed(0)
+        time.sleep(0.5)
+        driver.set_wheels_speed(0.1)
 
 cap = cv2.VideoCapture(-1)
 cap.set(cv2.CAP_PROP_FPS, 20)
@@ -154,8 +191,10 @@ cap.set(3,320)# framewith
 cap.set(4,240)# frameheight
 angles = [90, 90, 90]
 average_len = 3
-is_recording = False
+is_recording = True
 size = (320, 240)
+crash_list= 0
+crash = False
 if(is_recording):
     result = cv2.VideoWriter(f'result{time.strftime("%Y%m%d-%H%M%S")}.avi', cv2.VideoWriter_fourcc(*'XVID'),10, size)
 try:
@@ -175,7 +214,10 @@ try:
         else:
             new_steering_angle = -0.5 + real_angle * (0.25 - (-0.5)) / 90
         driver.set_steering_angle(new_steering_angle)
-        driver.set_wheels_speed(0.12)
+        if crash == True:
+            crash_detection(5, real_angle)
+        else:
+            driver.set_wheels_speed(0.12)
         print("--- %s seconds ---" % (time.time() - start_time))
         if(is_recording):
             result.write(combo_image)

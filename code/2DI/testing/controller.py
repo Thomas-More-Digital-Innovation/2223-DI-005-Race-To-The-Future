@@ -24,6 +24,7 @@ for event in device.read_loop():
         if event.code == ecodes.ABS_RZ:
             value = (device.absinfo(ecodes.ABS_RZ).value / 255)
             driver.set_wheels_speed(value)
+            print(value)
         #left
         if event.code == ecodes.ABS_Z:
             value = (device.absinfo(ecodes.ABS_Z).value / 255) - 1
@@ -31,6 +32,7 @@ for event in device.read_loop():
             print('---')
             print(-(1+value))
             driver.set_wheels_speed(-(1+value))
+            print(-(1+value))
         # left axis
         if event.code == ecodes.ABS_X:
         
@@ -39,8 +41,6 @@ for event in device.read_loop():
             else:
                 value = ((device.absinfo(ecodes.ABS_X).value / 126) * 0.75) - 0.5
             driver.set_steering_angle(value)
-            print("controller:",device.absinfo(ecodes.ABS_X).value)
-            print("value:",value)
     except KeyboardInterrupt:
         print('interrupted!')
         driver.set_steering_angle(0.0)
