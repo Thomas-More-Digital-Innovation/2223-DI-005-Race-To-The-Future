@@ -19,6 +19,8 @@ for file in files:
         datapoint: DataPoint = pickle.load(pickle_file)
 
         if type(datapoint) is not DataPoint:
+            print(f"Invalid pickle: {file}")
             continue
 
-        cv2.imwrite(f"./extracted/img_{datapoint.timestamp}.png", datapoint.image)
+        cv2.imwrite(
+            f"./extracted/img_{datapoint.timestamp}.png", datapoint.image)
