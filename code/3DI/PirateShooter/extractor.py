@@ -13,7 +13,7 @@ for file in files:
     if path_parts[len(path_parts) - 1] != "pickle":
         continue
 
-    print(f"Extracting pickle: {file}")
+    # print(f"Extracting pickle: {file}")
 
     with open(f"./datapoints/{file}", "rb") as pickle_file:
         datapoint: DataPoint = pickle.load(pickle_file)
