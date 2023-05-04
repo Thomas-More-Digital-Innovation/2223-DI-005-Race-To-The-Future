@@ -16,9 +16,9 @@ import keras
 import tensorflow as tf
 import pandas as pd
 import numpy as np
-from util.MyCPCallback import MyCPCallback
+from trainer.util.MyCPCallback import MyCPCallback
 # from ai_training import TrainingClass
-import config
+from trainer import config
 import os
 import random
 import fnmatch
@@ -234,7 +234,8 @@ def image_data_generator(image_paths, steering_angles, input_shape, batch_size, 
         for i in range(batch_size):
             random_index = random.randint(0, len(image_paths) - 1)
             image_path = image_paths[random_index]
-            image = my_imread(image_paths[random_index])
+            # image = my_imread(image_paths[random_index])
+            image = image_paths[random_index]
             steering_angle = steering_angles[random_index]
             if is_training:
                 # training: augment image
@@ -249,12 +250,13 @@ def image_data_generator(image_paths, steering_angles, input_shape, batch_size, 
 
 
 def extractor(datapoint_file):
-    with open(f"./datapoints/{datapoint_file}", "rb") as pickle_file:
+    with open(f"datapoints/{datapoint_file}", "rb") as pickle_file:
+        print(f"Loading {datapoint_file}!")
         datapoint: DataPoint = pickle.load(pickle_file)
 
-        if type(datapoint) is not DataPoint:
-            print(f"Invalid pickle: {datapoint_file}")
-            return
+        # if type(datapoint) is not DataPoint:
+        #     print(f"Invalid pickle: {datapoint_file}")
+        #     return
         return datapoint.steering_angle, datapoint.image
 
 
@@ -278,11 +280,16 @@ steering_angles = []
 jpeg_files = []
 
 print("Extracting data from pickle files...")
-for datapoint_file in os.listdir("../datapoints"):
-    steering_angle, image = extractor(datapoint_file)
-    steering_angles.append(steering_angle)
-    jpeg_files.append(image)
-
+try:
+    for datapoint_file in os.listdir("./datapoints"):
+        # check if the file is a pickle file
+        if datapoint_file.endswith(".pickle"):
+            steering_angle, image = extractor(datapoint_file)
+            steering_angles.append(steering_angle)
+            jpeg_files.append(image)
+except:
+    print("no more pickle files?")
+    pass
 #  Terminal Print to check if the right values are in the dataframes
 df = pd.DataFrame()
 df['ImagePath'] = jpeg_files
