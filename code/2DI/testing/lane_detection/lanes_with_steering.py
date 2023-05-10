@@ -10,7 +10,7 @@ driver = ShooterDriver()
 def make_coordinates(image, line_parameters):
     slope, intercept = line_parameters
     y1 = image.shape[0]
-    y2 = int(y1*(5.5/10))
+    y2 = int(y1*(4.5/10))
     x1 = int((y1 - intercept)/slope)
     x2 = int((y2 - intercept)/slope)
     
@@ -40,7 +40,6 @@ def average_slope_intercept(image, lines):
             parameters = np.polyfit((x1, x2), (y1, y2), 1)
             slope = parameters[0]
             intercept = parameters[1]
-            print(slope)
             if slope < -0.001 :
                 if x1 < left_region_boundary and x2 < left_region_boundary:
                     left_fit.append((slope, intercept))
@@ -62,14 +61,14 @@ def average_slope_intercept(image, lines):
 def canny(image):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     blur = cv2.blur(hsv, (3,3))
-    lower  = np.array([160,100,35]) #Color range grade (160-240 is blue) , Saturation, Value
-    upper = np.array([200,255,255])
+    lower  = np.array([100,100,35]) #Color range grade (160-240 is blue) , Saturation, Value
+    upper = np.array([210,255,255]) #lower  = np.array([160,100,35]), upper = np.array([200,255,255])
     gray = cv2.inRange(blur, lower, upper)
     canny = cv2.Canny(gray, 190, 255)
     if(is_recording):
-        cv2.imwrite("gray.png", gray)
-        cv2.imwrite("hsv.png", hsv)
-        cv2.imwrite("blur.png", blur)
+        # cv2.imwrite("gray.png", gray)
+        # cv2.imwrite("hsv.png", hsv)
+        # cv2.imwrite("blur.png", blur)
         cv2.imwrite('./resultCanny.png',canny)
     return canny
 
@@ -105,12 +104,12 @@ def display_lines(image, lines, steering_angle):
 
 def region_of_interest(image):
     height = image.shape[0] 
-    horizon = np.array([[(0, height), (320, height) , (320, height-110), (115, 130),(235, 130), (0, height-110)]], np.int32)
+    horizon = np.array([[(0, height-10), (320, height-10) , (320, height-140), (115, 90),(235, 90), (0, height-150)]], np.int32)
     mask = np.zeros_like(image)
     cv2.fillPoly(mask, horizon, 255)
     masked_image = cv2.bitwise_and(image,mask)
-    if(is_recording):
-        cv2.imwrite('./resultROI.png',masked_image)
+    # if(is_recording):
+        # cv2.imwrite('./resultROI.png',masked_image)
     return masked_image
 
 def compute_steering_angle(frame, lane_lines):
@@ -122,17 +121,17 @@ def compute_steering_angle(frame, lane_lines):
         if len(lane_lines[0]) == 0 and len(lane_lines[1]) == 0:
             return 90
         if len(lane_lines[0]) == 0 and len(lane_lines[1]) == 1:
-            average_len = 15
+            average_len = 12
             x1, _, x2, _ = lane_lines[1][0]
             x_offset = x2 - (x1 * 0.7)
         elif len(lane_lines[0]) == 1 and len(lane_lines[1]) == 0:
-            average_len = 15
+            average_len = 12
             x1, _, x2, _ = lane_lines[0][0]
             x_offset = x2 - (x1 * 0.7)
         else:
-            if average_len == 15:
+            if average_len == 12:
                 angles = [90, 90, 90]
-                average_len = 3
+                average_len = 6
             _, _, left_x2, _ = lane_lines[0][0]
             _, _, right_x2, _ = lane_lines[1][0]
             camera_mid_offset_percent = 0.00 # 0.0 means car pointing to center, -0.03: car is centered to left, +0.03 means car pointing to right
@@ -163,7 +162,7 @@ def crash_detection(length, real_angle):
     global crash_list
 
     if crash_list < length:
-        driver.set_wheels_speed(0.12)
+        driver.set_wheels_speed(speed)
     else:
         crash_list = 0
         driver.set_wheels_speed(-1.0)
@@ -177,7 +176,7 @@ def crash_detection(length, real_angle):
             reverse_angle = real_angle + 90
             new_steering_angle = -0.5 + reverse_angle * (0.25 - (-0.5)) / 90
         driver.set_steering_angle(new_steering_angle) 
-        driver.set_wheels_speed(-0.1)
+        driver.set_wheels_speed(-0.14)
         time.sleep(2)
         driver.set_wheels_speed(0)
         time.sleep(0.5)
@@ -189,12 +188,14 @@ fps = int(cap.get(5))
 print("fps:", fps)
 cap.set(3,320)# framewith
 cap.set(4,240)# frameheight
+time.sleep(1) # wacht op initialisatie
 angles = [90, 90, 90]
-average_len = 3
-is_recording = True
+average_len = 6
+is_recording = False
 size = (320, 240)
 crash_list= 0
-crash = False
+crash = True
+speed = 0.18
 if(is_recording):
     result = cv2.VideoWriter(f'result{time.strftime("%Y%m%d-%H%M%S")}.avi', cv2.VideoWriter_fourcc(*'XVID'),10, size)
 try:
@@ -203,7 +204,7 @@ try:
         _, frame = cap.read()
         canny_image = canny(frame)
         cropped_image = region_of_interest(canny_image)
-        lines = cv2.HoughLinesP(cropped_image, 4, np.pi/180, 70, np.array([]), minLineLength=15, maxLineGap=4)
+        lines = cv2.HoughLinesP(cropped_image, 4, np.pi/180, 70, np.array([]), minLineLength=10, maxLineGap=4) #lines = cv2.HoughLinesP(cropped_image, 4, np.pi/180, 70, np.array([]), minLineLength=15, maxLineGap=4)
         average_lines = average_slope_intercept(frame, lines)
         steering_angle = compute_steering_angle(frame, average_lines) # replace this with your steering angle calculation function
         real_angle = average_angle(steering_angle)
@@ -217,11 +218,11 @@ try:
         if crash == True:
             crash_detection(5, real_angle)
         else:
-            driver.set_wheels_speed(0.12)
+            driver.set_wheels_speed(speed)
         print("--- %s seconds ---" % (time.time() - start_time))
         if(is_recording):
             result.write(combo_image)
-            cv2.imwrite('./result.png',combo_image)
+            # cv2.imwrite('./result.png',combo_image)
 except KeyboardInterrupt:
     print('interrupted!')
     driver.set_steering_angle(0.25)
