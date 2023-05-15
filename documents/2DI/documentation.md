@@ -15,8 +15,8 @@ Auto stuurde te snel. Roling average toegevoegt, enkele buis kleinere weight op 
 ## Trage reactie
 lage proccessing speed. Test met videos uit (Verbetering)
 
-## Boundries
-Verkeerde detectie van lijnen. Boundries toegevoegd om dit te voorkomen (Lijnen op linkse deel links en rechts rechts)
+## Boundaries
+Verkeerde detectie van lijnen. Boundaries toegevoegd om dit te voorkomen (Lijnen op linkse deel links en rechts rechts)
 
 ## Slecht overzicht
 Slecht overzicht van de baan. Camera naar achter verplaats zodat we deel van de auto zien en meer baan zien.
